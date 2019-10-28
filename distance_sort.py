@@ -2,73 +2,77 @@
 
 from __future__ import unicode_literals
 import argparse
+import geopy.distance
 import json
-import os
-import requests
-import urllib
+
+from google_maps import get_latitude_longitude
 
 TRANSFORMED_JSON_DATA_PATH='transformed_data.json'
-API_KEY=os.environ['GOOGLE_MAPS_API_KEY']
-CITY_AND_STATE='Boston, MA'
-
-def append_city_and_state(address):
-    return address + ', ' + CITY_AND_STATE
-
-def get_latitude_longitude(address):
-    urlsafe_address = urllib.quote_plus(address)
-    url = 'https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}'.format(urlsafe_address, API_KEY)
-
-    response = requests.get(url)
-    json_response = response.json()
-
-    location = json_response['results'][0]['geometry']['location']
-    
-    return location['lat'], location['lng']
 
 def get_transformed_data():
+    '''
+    Returns a list of dicts, where each dict has keys (name, when, location, latitude, longitude)
+    '''
     with open(TRANSFORMED_JSON_DATA_PATH) as data_file:
         return json.load(data_file)
 
-def transform_with_location(data):
+def get_distance_in_miles(latitude_from, longitude_from, latitude_to, longitude_to):
     '''
-    Transform json data for restaurants by adding latitude and longitude.
+    Computes the distance between two lat/longs, using the vincenty distance from geopy (more accurate ellipsoidal models than Haversine formula. Haversine assumed the earth is a sphere, which results in errors up to 0.5% ;)
+    See https://stackoverflow.com/questions/38248046/is-the-haversine-formula-or-the-vincentys-formula-better-for-calculating-distan
+    '''
+    return geopy.distance.vincenty((latitude_from, longitude_from), (latitude_to, longitude_to)).mi
+    
+
+def transform_data_with_distances(locations, origin_location):
+    '''
+    Transforms imported data by adding a `distance` entry to each map, indicating the distance in miles from the origin_location.
+    '''
+    transformed_data = []
+    for location in locations:
+        distance_in_miles = get_distance_in_miles(origin_location['latitude'], origin_location['longitude'], location['latitude'], location['longitude'])
+        copied_data = location.copy()
+        copied_data['distance'] = distance_in_miles
+
+        transformed_data.append(copied_data)
+
+    return transformed_data
+    
+def sort_by_distance_between(locations, origin_location):
+    '''
+    Sorts location data by distance to origin_location.
+    location : dict() with keys (name, where, location, latitude, longitude).
+    origin_location : dict() with keys (latitude, longitude)
     '''
 
-    transformed = []
+    data_with_distances = transform_data_with_distances(locations, origin_location)
 
-    for d in data:
-        when = d['when']
-        name = d['name']
-        location = d['location']
-
-        location_with_city_and_state = append_city_and_state(location)
-        latitude, longitude = get_latitude_longitude(location_with_city_and_state)
-        print('when: {} | name: {} | location: {} | latitude: {} | longitude: {}'.format(when,name,location, latitude, longitude))
-
-        # Don't destroy the input
-        data = d.copy()
-        data['latitude'] = latitude
-        data['longitude'] = longitude
-        
-        transformed.append(data)
-
-    return transformed
+    return sorted(data_with_distances, key = lambda entry: entry['distance'])
 
 def parse_address_from_args():
+    '''
+    Extract the address from args. This will be used to determine origin location.
+    '''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--address', nargs='+')
+    parser.add_argument('-a', '--address', nargs='+', required=True)
 
     arguments = parser.parse_args()
 
     return ' '.join(arguments.address)
 
 def main():
-    data = get_json_data()
-    transformed_data = transform_with_location(data)
+    address = parse_address_from_args()
 
-    with open('transformed_data.json', 'w') as outfile:
-        json.dump(transformed_data, outfile)
-        
+    origin_latitude, origin_longitude = get_latitude_longitude(address)
+    
+    locations = get_transformed_data()
+
+    origin_location = {'latitude': origin_latitude, 'longitude': origin_longitude}
+
+    sorted_locations = sort_by_distance_between(locations, origin_location)
+
+    with open('sorted_locations.json', 'w') as outfile:
+        json.dump(sorted_locations, outfile)
 
 if __name__=='__main__':
     main()

@@ -15,6 +15,10 @@ def get_latitude_longitude(address):
     url = 'https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}'.format(urlsafe_address, API_KEY)
 
     response = requests.get(url)
+
+    if not response.ok:
+        return None
+    
     json_response = response.json()
 
     location = json_response['results'][0]['geometry']['location']
