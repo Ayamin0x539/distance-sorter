@@ -5,7 +5,6 @@ Sort some locations by distance.
 What's the closest place I can get $1 oysters? I have the addresses but don't to plug them all into Google maps by hand. https://www.boston.com/food/restaurants/2019/07/16/dollar-oyster-deals-in-boston-cambridge-somerville
 
 ## Dependencies
-- https://github.com/manuelbieh/geolib
 - https://developers.google.com/maps/documentation/geocoding/start
 
 ## Start
