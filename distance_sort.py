@@ -72,7 +72,7 @@ def main():
     sorted_locations = sort_by_distance_between(locations, origin_location)
 
     with open('sorted_locations.json', 'w') as outfile:
-        json.dump(sorted_locations, outfile)
+        json.dump(sorted_locations, outfile, indent=2)
 
 if __name__=='__main__':
     main()

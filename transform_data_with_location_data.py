@@ -45,7 +45,7 @@ def main():
     transformed_data = transform_with_location(data)
 
     with open('transformed_data.json', 'w') as outfile:
-        json.dump(transformed_data, outfile)
+        json.dump(transformed_data, outfile, indent=2)
         
 
 if __name__=='__main__':

@@ -48,7 +48,7 @@ def main():
     data = get_data_as_list_of_entries()
 
     with open('data.json', 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(data, outfile, indent=2)
 
 
 if __name__=='__main__':
