@@ -1,17 +1,32 @@
 #!/usr/bin/env python
 
 from __future__ import unicode_literals
+import argparse
 import json
-from google_maps import get_latitude_longitude
+import os
+import requests
+import urllib
 
-JSON_DATA_PATH='data.json'
+TRANSFORMED_JSON_DATA_PATH='transformed_data.json'
+API_KEY=os.environ['GOOGLE_MAPS_API_KEY']
 CITY_AND_STATE='Boston, MA'
 
 def append_city_and_state(address):
     return address + ', ' + CITY_AND_STATE
 
-def get_json_data():
-    with open(JSON_DATA_PATH) as data_file:
+def get_latitude_longitude(address):
+    urlsafe_address = urllib.quote_plus(address)
+    url = 'https://maps.googleapis.com/maps/api/geocode/json?address={}&key={}'.format(urlsafe_address, API_KEY)
+
+    response = requests.get(url)
+    json_response = response.json()
+
+    location = json_response['results'][0]['geometry']['location']
+    
+    return location['lat'], location['lng']
+
+def get_transformed_data():
+    with open(TRANSFORMED_JSON_DATA_PATH) as data_file:
         return json.load(data_file)
 
 def transform_with_location(data):
@@ -39,6 +54,13 @@ def transform_with_location(data):
 
     return transformed
 
+def parse_address_from_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--address', nargs='+')
+
+    arguments = parser.parse_args()
+
+    return ' '.join(arguments.address)
 
 def main():
     data = get_json_data()
