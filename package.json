@@ -1,0 +1,11 @@
+{
+  "name": "distance-sorter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:Ayamin0x539/distance-sorter.git",
+  "author": "Aya <ayamin1337@yahoo.com>",
+  "license": "MIT",
+  "dependencies": {
+    "geolib": "^3.0.4"
+  }
+}
